@@ -2,7 +2,7 @@ import jpeg from 'jpeg-js';
 import fetch from 'node-fetch';
 import pixelmatch from 'pixelmatch';
 
-type CompareResult = {
+export type CompareResult = {
     percent: number;
 };
 

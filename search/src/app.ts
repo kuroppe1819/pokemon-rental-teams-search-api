@@ -1,7 +1,7 @@
 import { tweetsRecentSearch } from './twitter';
 import { errorResponse } from './response';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { compare } from './pixel-match';
+import { compare, CompareResult } from './pixel-match';
 
 type PhotoMedia = {
     media_key: string;
@@ -29,7 +29,19 @@ const rentalTeamsRecentSearch = async (searchText: string, nextToken?: string): 
     }
 
     for (const media of filteredPhotoMedia) {
-        const compareResult = await compare('https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg', media.url); // TODO: S3からベース画像を取得する
+        let compareResult: CompareResult | null = null;
+
+        try {
+            compareResult = await compare('https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg', media.url); // TODO: S3からベース画像を取得する
+        } catch (err) {
+            // console.log(err);
+            // console.log(media.url);
+            continue;
+        }
+
+        if (compareResult === null) {
+            continue;
+        }
 
         if (compareResult.percent < 85) {
             continue;
@@ -68,11 +80,12 @@ const rentalTeamsRecentSearch = async (searchText: string, nextToken?: string): 
 };
 
 const getRentalTeams = async (): Promise<RentalTeams[]> => {
+    // 検索数に応じて Lambda の Memory size や Timeout の設定を変更する
     const result1 = await rentalTeamsRecentSearch('#レンタルパーティ');
     const result2 = await rentalTeamsRecentSearch('#pokemonvgc');
-    // const result3 = rentalTeamsRecentSearch('#レンタルチーム');
+    const result3 = await rentalTeamsRecentSearch('#レンタルチーム');
 
-    const mergearray = [...result1, ...result2];
+    const mergearray = [...result1, ...result2, ...result3];
     const rentalTeamsSet = Array.from<RentalTeams>(
         mergearray.reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map()).values(),
     );
