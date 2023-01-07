@@ -10,7 +10,7 @@ type PhotoMedia = {
 };
 
 type RentalTeams = {
-    media_key: string;
+    mediaKey: string;
     tweetId: string;
     authorId: string;
     createdAt: string;
@@ -58,7 +58,7 @@ const rentalTeamsRecentSearch = async (searchText: string, nextToken?: string): 
         }
 
         rentalTeams.push({
-            media_key: media.media_key,
+            mediaKey: media.media_key,
             tweetId: matchedTwitterData.id,
             authorId: matchedTwitterData.author_id,
             createdAt: matchedTwitterData.created_at,
