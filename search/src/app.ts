@@ -90,7 +90,11 @@ const getRentalTeams = async (): Promise<RentalTeams[]> => {
         mergearray.reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map()).values(),
     );
 
-    return rentalTeamsSet;
+    const rentalTeamsCreatedAtSortByAsc = rentalTeamsSet.sort(
+        (item1, item2) => new Date(item2.createdAt).getTime() - new Date(item1.createdAt).getTime(),
+    );
+
+    return rentalTeamsCreatedAtSortByAsc;
 };
 
 /**
