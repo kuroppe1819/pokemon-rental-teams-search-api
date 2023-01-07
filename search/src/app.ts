@@ -1,7 +1,7 @@
-import { tweetsRecentSearch } from './twitter';
-import { errorResponse } from './response';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { compare, CompareResult } from './pixel-match';
+import { errorResponse } from './response';
+import { tweetsRecentSearch, TweetsRecentSearchResult } from './twitter';
 
 type PhotoMedia = {
     media_key: string;
@@ -18,82 +18,86 @@ type RentalTeams = {
     text: string | undefined;
 };
 
-const rentalTeamsRecentSearch = async (searchText: string, nextToken?: string): Promise<RentalTeams[]> => {
-    const rentalTeams: RentalTeams[] = [];
-    const { data: twitterData, includes, meta } = await tweetsRecentSearch(searchText, nextToken);
-    const filteredPhotoMedia = includes?.media?.filter((media) => media.type === 'photo') as PhotoMedia[] | undefined;
+type Unpacked<T> = T extends (infer U)[] ? U : T;
 
-    if (twitterData === undefined || filteredPhotoMedia === undefined) {
-        // TODO: 次のツイートの検索結果を取得しにいく
-        return rentalTeams;
+const isMatchedRentalTeamsImage = async (imageUrl: string) => {
+    let compareResult: CompareResult | null = null;
+
+    try {
+        compareResult = await compare('https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg', imageUrl); // TODO: S3からベース画像を取得する
+    } catch (err) {
+        // console.log(err);
+        // console.log(media.url);
+        throw err;
     }
 
-    for (const media of filteredPhotoMedia) {
-        let compareResult: CompareResult | null = null;
-
-        try {
-            compareResult = await compare('https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg', media.url); // TODO: S3からベース画像を取得する
-        } catch (err) {
-            // console.log(err);
-            // console.log(media.url);
-            continue;
-        }
-
-        if (compareResult === null) {
-            continue;
-        }
-
-        if (compareResult.percent < 85) {
-            continue;
-        }
-
-        const matchedTwitterData = twitterData.find((data) => data.attachments?.media_keys?.includes(media.media_key));
-
-        if (
-            matchedTwitterData === undefined ||
-            matchedTwitterData.author_id === undefined ||
-            matchedTwitterData.created_at === undefined
-        ) {
-            continue;
-        }
-
-        rentalTeams.push({
-            mediaKey: media.media_key,
-            tweetId: matchedTwitterData.id,
-            authorId: matchedTwitterData.author_id,
-            createdAt: matchedTwitterData.created_at,
-            imageUrl: media.url,
-            text: matchedTwitterData.text,
-        });
+    if (compareResult === null) {
+        throw new Error('Error: compareResult is null.');
     }
 
-    if (meta !== undefined && meta.next_token) {
-        const result = await rentalTeamsRecentSearch(meta.next_token);
-        const mergearray = [...rentalTeams, ...result];
-        const rentalTeamsSet = Array.from<RentalTeams>(
-            mergearray.reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map()).values(),
-        );
-        return rentalTeamsSet;
-    }
-
-    return rentalTeams;
+    return compareResult.percent >= 85;
 };
 
 const getRentalTeams = async (): Promise<RentalTeams[]> => {
-    const response = await Promise.all([
-        rentalTeamsRecentSearch('#レンタルパーティ'),
-        rentalTeamsRecentSearch('#pokemonvgc'),
-        rentalTeamsRecentSearch('#レンタルチーム'),
+    const res = await Promise.allSettled([
+        tweetsRecentSearch('#レンタルパーティ'),
+        tweetsRecentSearch('#pokemonvgc'),
+        tweetsRecentSearch('#レンタルチーム'),
     ]);
 
-    const rentalTeamsSet = Array.from<RentalTeams>(
-        response
-            .flatMap((v) => v)
-            .reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map())
+    const searchResult = res
+        .filter((v) => v.status === 'fulfilled')
+        .flatMap<TweetsRecentSearchResult>((v) => (v as PromiseFulfilledResult<TweetsRecentSearchResult>).value);
+
+    const dataSet = Array.from<Unpacked<TweetsRecentSearchResult['data']>>(
+        searchResult
+            .flatMap((v) => v.data)
+            .reduce((map, current) => map.set(`${current.id}`, current), new Map())
             .values(),
     );
 
-    const rentalTeamsCreatedAtSortByAsc = rentalTeamsSet.sort(
+    const mediaSet = Array.from<PhotoMedia>(
+        searchResult
+            .flatMap((v) => v.media)
+            .reduce((map, current) => {
+                if (current.media_key === undefined) {
+                    return map;
+                }
+                return map.set(`${current.media_key}`, current);
+            }, new Map())
+            .values(),
+    ).filter((v) => v.type === 'photo');
+
+    const rentalTeams: RentalTeams[] = [];
+    const compareResult = await Promise.allSettled(mediaSet.map((media) => isMatchedRentalTeamsImage(media.url)));
+
+    for (let i = 0; i < compareResult.length; i++) {
+        const result = compareResult[i];
+        const media = mediaSet[i];
+
+        if (result.status === 'fulfilled' && result.value) {
+            const matchedTwitterData = dataSet.find((data) => data.attachments?.media_keys?.includes(media.media_key));
+
+            if (
+                matchedTwitterData === undefined ||
+                matchedTwitterData.author_id === undefined ||
+                matchedTwitterData.created_at === undefined
+            ) {
+                continue;
+            }
+
+            rentalTeams.push({
+                mediaKey: media.media_key,
+                tweetId: matchedTwitterData.id,
+                authorId: matchedTwitterData.author_id,
+                createdAt: matchedTwitterData.created_at,
+                imageUrl: media.url,
+                text: matchedTwitterData.text,
+            });
+        }
+    }
+
+    const rentalTeamsCreatedAtSortByAsc = rentalTeams.sort(
         (item1, item2) => new Date(item2.createdAt).getTime() - new Date(item1.createdAt).getTime(),
     );
 

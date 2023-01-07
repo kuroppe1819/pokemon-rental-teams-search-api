@@ -10,8 +10,8 @@ Parameters:
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 180
-    MemorySize: 512
+    Timeout: 420
+    MemorySize: 1024
 
 Resources:
   PokemonRentalTeamsSearchFunction:
