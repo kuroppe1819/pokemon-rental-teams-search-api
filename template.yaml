@@ -3,6 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   pokemon-rental-teams-search-api
 
+Parameters:
+  TwitterBearerToken:
+    Type: String
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -18,15 +22,15 @@ Resources:
       Runtime: nodejs16.x
       Architectures:
         - x86_64
+      Environment:
+        Variables:
+          TWITTER_BEARER_TOKEN: !Ref TwitterBearerToken
       Events:
         PokemonRentalTeamsSearch:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /
             Method: get
-      Environment:
-        Variables:
-          TWITTER_BEARER_TOKEN: !Ref TwitterBearerToken
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -35,10 +39,6 @@ Resources:
         # Sourcemap: true # Enabling source maps will create the required NODE_OPTIONS environment variables on your lambda function during sam build
         EntryPoints:
           - src/app.ts
-
-  Parameters:
-    TwitterBearerToken:
-      Type: String
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
