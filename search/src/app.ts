@@ -80,14 +80,17 @@ const rentalTeamsRecentSearch = async (searchText: string, nextToken?: string): 
 };
 
 const getRentalTeams = async (): Promise<RentalTeams[]> => {
-    // 検索数に応じて Lambda の Memory size や Timeout の設定を変更する
-    const result1 = await rentalTeamsRecentSearch('#レンタルパーティ');
-    const result2 = await rentalTeamsRecentSearch('#pokemonvgc');
-    const result3 = await rentalTeamsRecentSearch('#レンタルチーム');
+    const response = await Promise.all([
+        rentalTeamsRecentSearch('#レンタルパーティ'),
+        rentalTeamsRecentSearch('#pokemonvgc'),
+        rentalTeamsRecentSearch('#レンタルチーム'),
+    ]);
 
-    const mergearray = [...result1, ...result2, ...result3];
     const rentalTeamsSet = Array.from<RentalTeams>(
-        mergearray.reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map()).values(),
+        response
+            .flatMap((v) => v)
+            .reduce((map, currentitem) => map.set(currentitem.imageUrl, currentitem), new Map())
+            .values(),
     );
 
     const rentalTeamsCreatedAtSortByAsc = rentalTeamsSet.sort(
