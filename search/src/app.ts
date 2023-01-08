@@ -9,7 +9,7 @@ type PhotoMedia = {
     url: string;
 };
 
-type RentalTeams = {
+type RentalTeam = {
     mediaKey: string;
     tweetId: string;
     authorId: string;
@@ -24,7 +24,11 @@ const isMatchedRentalTeamsImage = async (imageUrl: string) => {
     let compareResult: CompareResult | null = null;
 
     try {
-        compareResult = await compare('https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg', imageUrl); // TODO: S3からベース画像を取得する
+        compareResult = await compare(
+            // TODO: S3からベース画像を取得する
+            'https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg',
+            imageUrl,
+        );
     } catch (err) {
         // console.log(err);
         // console.log(media.url);
@@ -38,7 +42,7 @@ const isMatchedRentalTeamsImage = async (imageUrl: string) => {
     return compareResult.percent >= 85;
 };
 
-const getRentalTeams = async (): Promise<RentalTeams[]> => {
+const getRentalTeams = async (): Promise<RentalTeam[]> => {
     const res = await Promise.allSettled([
         tweetsRecentSearch('#レンタルパーティ'),
         tweetsRecentSearch('#pokemonvgc'),
@@ -68,7 +72,7 @@ const getRentalTeams = async (): Promise<RentalTeams[]> => {
             .values(),
     ).filter((v) => v.type === 'photo');
 
-    const rentalTeams: RentalTeams[] = [];
+    const rentalTeams: RentalTeam[] = [];
     const compareResult = await Promise.allSettled(mediaSet.map((media) => isMatchedRentalTeamsImage(media.url)));
 
     for (let i = 0; i < compareResult.length; i++) {
