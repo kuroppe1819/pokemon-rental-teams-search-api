@@ -10,12 +10,20 @@ type PhotoMedia = {
 };
 
 type RentalTeam = {
-    mediaKey: string;
-    tweetId: string;
-    authorId: string;
-    createdAt: string;
-    imageUrl: string;
-    text: string | undefined;
+    tweet: {
+        mediaKey: string;
+        tweetId: string;
+        authorId: string;
+        createdAt: string;
+        imageUrl: string;
+        text: string | undefined;
+    };
+    user: {
+        authorId: string;
+        username: string;
+        name: string;
+        profileImageUrl: string | undefined;
+    };
 };
 
 type Unpacked<T> = T extends (infer U)[] ? U : T;
@@ -72,6 +80,13 @@ const getRentalTeams = async (): Promise<RentalTeam[]> => {
             .values(),
     ).filter((v) => v.type === 'photo');
 
+    const usersSet = Array.from<Unpacked<TweetsRecentSearchResult['users']>>(
+        searchResult
+            .flatMap((v) => v.users)
+            .reduce((map, current) => map.set(`${current.id}`, current), new Map())
+            .values(),
+    );
+
     const rentalTeams: RentalTeam[] = [];
     const compareResult = await Promise.allSettled(mediaSet.map((media) => isMatchedRentalTeamsImage(media.url)));
 
@@ -90,19 +105,33 @@ const getRentalTeams = async (): Promise<RentalTeam[]> => {
                 continue;
             }
 
+            const matchedUserData = usersSet.find((user) => user.id === matchedTwitterData.author_id);
+
+            if (matchedUserData === undefined) {
+                continue;
+            }
+
             rentalTeams.push({
-                mediaKey: media.media_key,
-                tweetId: matchedTwitterData.id,
-                authorId: matchedTwitterData.author_id,
-                createdAt: matchedTwitterData.created_at,
-                imageUrl: media.url,
-                text: matchedTwitterData.text,
+                tweet: {
+                    mediaKey: media.media_key,
+                    tweetId: matchedTwitterData.id,
+                    authorId: matchedTwitterData.author_id,
+                    createdAt: matchedTwitterData.created_at,
+                    imageUrl: media.url,
+                    text: matchedTwitterData.text,
+                },
+                user: {
+                    authorId: matchedUserData.id,
+                    username: matchedUserData.username,
+                    name: matchedUserData.name,
+                    profileImageUrl: matchedUserData.profile_image_url,
+                },
             });
         }
     }
 
     const rentalTeamsCreatedAtSortByAsc = rentalTeams.sort(
-        (item1, item2) => new Date(item2.createdAt).getTime() - new Date(item1.createdAt).getTime(),
+        (item1, item2) => new Date(item2.tweet.createdAt).getTime() - new Date(item1.tweet.createdAt).getTime(),
     );
 
     return rentalTeamsCreatedAtSortByAsc;
