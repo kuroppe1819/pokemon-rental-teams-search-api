@@ -47,7 +47,7 @@ const isMatchedRentalTeamsImage = async (imageUrl: string) => {
         throw new Error('Error: compareResult is null.');
     }
 
-    return compareResult.percent >= 85;
+    return compareResult.percent >= 83;
 };
 
 const getRentalTeams = async (): Promise<RentalTeam[]> => {
