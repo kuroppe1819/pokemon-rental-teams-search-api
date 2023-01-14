@@ -29,25 +29,17 @@ type RentalTeam = {
 type Unpacked<T> = T extends (infer U)[] ? U : T;
 
 const isMatchedRentalTeamsImage = async (imageUrl: string) => {
-    let compareResult: CompareResult | null = null;
-
     try {
-        compareResult = await compare(
-            // TODO: S3からベース画像を取得する
-            'https://pbs.twimg.com/media/FlEG2LWaEAcHV1v.jpg',
+        const compareResult = await compare(
+            'https://pokemon-rental-teams-assets.s3.ap-northeast-1.amazonaws.com/base.jpeg',
             imageUrl,
         );
+
+        console.log(`${imageUrl}: ${compareResult.percent}`);
+        return compareResult.percent >= 80;
     } catch (err) {
-        // console.log(err);
-        // console.log(media.url);
         throw err;
     }
-
-    if (compareResult === null) {
-        throw new Error('Error: compareResult is null.');
-    }
-
-    return compareResult.percent >= 83;
 };
 
 const getRentalTeams = async (): Promise<RentalTeam[]> => {
