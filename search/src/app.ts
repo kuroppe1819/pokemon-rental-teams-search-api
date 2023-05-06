@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { compare, CompareResult } from './pixel-match';
+import { compare } from './pixel-match';
 import { errorResponse } from './response';
-import { tweetsRecentSearch, TweetsRecentSearchResult } from './twitter';
+import { TweetsRecentSearchResult, tweetsRecentSearch } from './twitter';
 
 type PhotoMedia = {
     media_key: string;

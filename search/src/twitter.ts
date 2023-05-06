@@ -10,7 +10,6 @@ export type TweetsRecentSearchResult = {
 };
 
 export const tweetsRecentSearch = async (searchText: string, nextToken?: string): Promise<TweetsRecentSearchResult> => {
-    // TODO: git にアップロードしちゃったからAPIキー発行しなおしてね
     const client = new Client(process.env.TWITTER_BEARER_TOKEN!);
     const { data, includes, meta } = await client.tweets.tweetsRecentSearch({
         query: `${searchText} has:images -is:retweet`,
