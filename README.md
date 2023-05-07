@@ -1,6 +1,12 @@
 # pokemon-rental-teams-search-api
 
-This API is required to run [pokemon-rental-teams-search](https://github.com/kuroppe1819/pokemon-rental-teams-search) app.
+This API is required to run the [pokemon-rental-teams-search](https://github.com/kuroppe1819/pokemon-rental-teams-search) app, also this API require the [pixel-match-api](https://github.com/kuroppe1819/pixel-match-api).
+
+The architecture of the application is shown below.
+
+![architecture](https://user-images.githubusercontent.com/17245737/236692625-a21f30b8-c80a-4ef7-9137-1f3f6be99fb6.jpeg)
+
+## Source Code and Resource Overview
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
