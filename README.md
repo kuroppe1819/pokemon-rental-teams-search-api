@@ -4,8 +4,6 @@ The pokemon-rental-teams-search-api return only tweets information about rental 
 
 This API is required to run the [pokemon-rental-teams-search](https://github.com/kuroppe1819/pokemon-rental-teams-search) app, also this API depend the [pixel-match-api](https://github.com/kuroppe1819/pixel-match-api) to identify images.
 
-The architecture of the application is shown below.
-
 ![architecture](https://user-images.githubusercontent.com/17245737/236692625-a21f30b8-c80a-4ef7-9137-1f3f6be99fb6.jpeg)
 
 ## Source Code and Resource Overview
